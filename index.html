@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>陸上部専用 CLUB LINK - コミュニケーション＆お休み連絡</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+      button, input, select, textarea { touch-action: manipulation; }
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+  </head>
+  <body class="bg-slate-100 text-slate-800 antialiased font-sans selection:bg-indigo-500 selection:text-white">
+
+    <div class="max-w-md w-full mx-auto bg-white min-h-screen flex flex-col shadow-2xl relative pb-20">
+
+      <!-- 1. トップヘッダー -->
+      <header class="bg-indigo-600 text-white p-4 sticky top-0 z-50 shadow-md">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-person-running text-xl text-yellow-300"></i>
+            <h1 class="font-bold text-lg tracking-wide">陸上部 LINK</h1>
+            <span class="text-[10px] bg-indigo-800 text-indigo-200 px-2 py-0.5 rounded-full font-mono">v3.0 Live</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="requestWindowsNotification()" id="btnNotification" class="text-xs bg-indigo-500 hover:bg-indigo-700 text-white font-medium px-2 py-1 rounded-lg border border-indigo-400 transition flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-bell"></i>
+              <span id="notificationBtnText">通知</span>
+            </button>
+            <button onclick="openRegisterModal()" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-2 py-1 rounded-lg transition flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-user-plus"></i> 登録
+            </button>
+            <button onclick="openInviteModal()" class="text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-2 py-1 rounded-lg transition flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-link"></i> 招待
+            </button>
+            <button onclick="openProfileModal()" class="text-xs bg-indigo-500 hover:bg-indigo-700 text-white font-medium px-2 py-1 rounded-lg border border-indigo-400 transition flex items-center gap-1 shadow-sm">
+              <i class="fa-solid fa-user"></i>
+              <span id="headerUserNick">ゲスト</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 端末動作モード・環境バナー -->
+        <div id="deviceNotice" class="bg-indigo-700/80 rounded-lg p-2 text-xs flex items-center justify-between backdrop-blur-sm border border-indigo-500/50">
+          <div class="flex items-center gap-2 overflow-hidden">
+            <i id="deviceIcon" class="fa-solid fa-laptop-code text-indigo-200"></i>
+            <span id="deviceText" class="truncate text-indigo-100">Windows / Surface 判定中...</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="syncStatus" class="text-[10px] bg-emerald-500/30 text-emerald-200 px-2 py-0.5 rounded border border-emerald-400/30 flex items-center gap-1 font-mono">
+              <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> クラウド同期中
+            </span>
+            <button onclick="showInstallHelp()" class="shrink-0 text-[10px] bg-yellow-400 hover:bg-yellow-300 text-indigo-950 font-bold px-2 py-0.5 rounded transition shadow-sm">
+              アプリ化ガイド
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- 2. ナビゲーションタブ -->
+      <nav class="bg-white border-b border-slate-200 flex sticky top-[89px] z-40 shadow-sm">
+        <button onclick="switchTab('timelineTab')" id="btnTimeline" class="tab-btn flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 transition flex justify-center items-center gap-1.5">
+          <i class="fa-solid fa-comments"></i> タイムライン
+        </button>
+        <button onclick="switchTab('formTab')" id="btnForm" class="tab-btn flex-1 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition flex justify-center items-center gap-1.5">
+          <i class="fa-solid fa-paper-plane"></i> お休み連絡
+        </button>
+        <button onclick="switchTab('adminTab')" id="btnAdmin" class="tab-btn flex-1 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition flex justify-center items-center gap-1.5 relative">
+          <i class="fa-solid fa-clipboard-check"></i> 承認管理
+          <span id="pendingBadge" class="absolute top-2 right-3 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">1</span>
+        </button>
+        <button onclick="switchTab('membersTab')" id="btnMembers" class="tab-btn flex-1 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 transition flex justify-center items-center gap-1.5">
+          <i class="fa-solid fa-key"></i> <span id="pwdTabLabel">パスワード管理</span>
+        </button>
+      </nav>
+
+      <!-- 3. メインビューエリア -->
+      <main class="flex-1 p-4 space-y-4">
+
+        <!-- TAB 1: タイムライン -->
+        <section id="timelineTab" class="space-y-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 bg-indigo-600 text-white font-bold rounded-full flex items-center justify-center text-xs" id="posterAvatar">私</div>
+              <span class="text-xs font-bold text-slate-700" id="posterNameLabel">投稿作成</span>
+            </div>
+            <textarea id="newPostInput" rows="2" placeholder="陸上部の練習連絡や共有事項を入力... (Ctrl + Enter で送信)" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+            <div class="flex justify-between items-center pt-1">
+              <label class="flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer">
+                <input type="checkbox" id="pinCheck" class="rounded text-indigo-600 focus:ring-indigo-500">
+                <i class="fa-solid fa-thumbtack text-amber-500"></i> ピン留め
+              </label>
+              <button onclick="submitNewPost()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow">
+                <i class="fa-solid fa-paper-plane mr-1"></i> 投稿する
+              </button>
+            </div>
+          </div>
+          <div id="postsContainer" class="space-y-4"></div>
+        </section>
+
+        <!-- TAB 2: お休み連絡 -->
+        <section id="formTab" class="hidden space-y-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
+            <div class="border-b border-slate-100 pb-3">
+              <h2 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-envelope-open-text text-indigo-600"></i> お休み・遅刻・早退連絡の送信
+              </h2>
+              <p class="text-[11px] text-slate-500 mt-0.5">部長・副部長および管理担当部員へ通知されます。</p>
+            </div>
+            <form onsubmit="submitAbsenceForm(event)" class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">区分</label>
+                <select id="absType" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="欠席">欠席</option>
+                  <option value="遅刻">遅刻</option>
+                  <option value="早退">早退</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">氏名</label>
+                <input type="text" id="absName" value="佐藤 葵" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">日付</label>
+                <input type="date" id="absDate" value="2026-11-11" required class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">理由</label>
+                <select id="absReason" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                  <option value="体調不良">体調不良</option>
+                  <option value="通院・病院">通院・病院</option>
+                  <option value="家庭の事情">家庭の事情</option>
+                  <option value="その他">その他</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">詳細理由・お迎え予定等</label>
+                <textarea id="absDetail" rows="2" placeholder="詳細を入力してください..." class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none">通院のため遅刻します。</textarea>
+              </div>
+              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs py-3 rounded-xl transition shadow">
+                <i class="fa-solid fa-paper-plane mr-1"></i> 連絡を提出する
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- TAB 3: 承認管理 -->
+        <section id="adminTab" class="hidden space-y-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+              <h2 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list text-indigo-600"></i> 受信したお休み連絡一覧
+              </h2>
+              <span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold">幹部用</span>
+            </div>
+            <div id="adminAbsenceList" class="space-y-2"></div>
+          </div>
+        </section>
+
+        <!-- TAB 4: パスワード管理 -->
+        <section id="membersTab" class="hidden space-y-4">
+          <div id="pwdNoticeBanner" class="bg-slate-900 text-white rounded-xl p-3.5 shadow-md flex justify-between items-center">
+            <div>
+              <h2 id="pwdTitle" class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-halved"></i> 部員・役職管理
+              </h2>
+              <p id="pwdSubTitle" class="text-[10px] text-slate-300">部員の登録承認、役職割り当て、パスワード確認を行います。</p>
+            </div>
+            <button onclick="renderMemberList()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded text-slate-200 border border-slate-700">更新</button>
+          </div>
+
+          <div id="pendingMembersSection" class="bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-sm space-y-2 hidden">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-xs text-amber-800 flex items-center gap-1">
+                <i class="fa-solid fa-user-clock"></i> 未承認ゲスト一覧（登録完了者）
+              </h3>
+              <span id="pendingMemberCount" class="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded-full">0件</span>
+            </div>
+            <div id="pendingMembersList" class="space-y-2 pt-1"></div>
+          </div>
+
+          <div id="membersListContainer" class="space-y-2"></div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- アプリメインスクリプト -->
+    <script>
+      let generatedAuthCode = "1234";
+
+      let membersDB = [
+        { id: 'usr-1', email: 'admin@school.ed.jp', nickName: '初期管理者 (あなた)', pass: 'admin1234', role: '👑 初期管理者(あなた)', status: 'approved' },
+        { id: 'usr-2', email: 'tanaka@school.ed.jp', nickName: '田中 陸', pass: 'track2026', role: '部長', status: 'approved' },
+        { id: 'usr-3', email: 'sato@school.ed.jp', nickName: '佐藤 葵', pass: 'pass777', role: '一般部員', status: 'approved' }
+      ];
+
+      let currentUser = {
+        id: 'usr-1',
+        nickName: '初期管理者 (あなた)',
+        email: 'admin@school.ed.jp',
+        role: '👑 初期管理者(あなた)',
+        isPrimaryAdmin: true
+      };
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+      }
+
+      function detectEnvironment() {
+        const isWin = navigator.userAgent.indexOf('Windows') !== -1;
+        const textEl = document.getElementById('deviceText');
+        if (textEl) textEl.textContent = isWin ? "Windows / Surface モード動作中" : "マルチデバイス Webモード動作中";
+      }
+
+      function showInstallHelp() {
+        alert("【Surface / Windows 導入手順】\n1. ブラウザ(Edge)でこのページを開きます。\n2. 右上の『...』メニューをクリック。\n3. 『アプリ』➔『このサイトをアプリとしてインストール』を選択します。");
+      }
+
+      function switchTab(tabId) {
+        const tabs = ['timelineTab', 'formTab', 'adminTab', 'membersTab'];
+        const btns = { timelineTab: 'btnTimeline', formTab: 'btnForm', adminTab: 'btnAdmin', membersTab: 'btnMembers' };
+
+        tabs.forEach(t => {
+          const el = document.getElementById(t);
+          if (el) el.classList.add('hidden');
+          const btn = document.getElementById(btns[t]);
+          if (btn) btn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600', 'font-bold');
+        });
+
+        const activeEl = document.getElementById(tabId);
+        if (activeEl) activeEl.classList.remove('hidden');
+        const activeBtn = document.getElementById(btns[tabId]);
+        if (activeBtn) activeBtn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600', 'font-bold');
+
+        if (tabId === 'timelineTab') renderPosts();
+        if (tabId === 'adminTab') renderAbsenceList();
+        if (tabId === 'membersTab') renderMemberList();
+      }
+
+      function requestWindowsNotification() {
+        if (!("Notification" in window)) {
+          alert("このブラウザはデスクトップ通知に対応していません。");
+          return;
+        }
+        Notification.requestPermission().then(permission => {
+          const btnText = document.getElementById('notificationBtnText');
+          if (permission === "granted") {
+            if (btnText) btnText.textContent = "通知オン";
+            new Notification("陸上部 LINK", { body: "Windowsデスクトップ通知が有効になりました！" });
+          }
+        });
+      }
+
+      function sendWindowsNotification(title, body) {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(title, { body: body });
+        }
+      }
+
+      function updateUserUI() {
+        const nickLabel = document.getElementById('headerUserNick');
+        const posterName = document.getElementById('posterNameLabel');
+        const posterAvatar = document.getElementById('posterAvatar');
+        if (nickLabel) nickLabel.textContent = currentUser.nickName;
+        if (posterName) posterName.textContent = `${currentUser.nickName} (${currentUser.role})`;
+        if (posterAvatar) posterAvatar.textContent = currentUser.nickName ? currentUser.nickName.substring(0, 1) : '私';
+      }
+
+      function openRegisterModal() {
+        generatedAuthCode = Math.floor(1000 + Math.random() * 9000).toString();
+        const email = prompt("メールアドレスを入力してください:");
+        if (!email) return;
+        alert(`【仮デモ用】送信された認証コードは [ ${generatedAuthCode} ] です。`);
+        const code = prompt("認証コードを入力してください:");
+        if (code !== generatedAuthCode) {
+          alert("認証コードが正しくありません。");
+          return;
+        }
+        const name = prompt("ニックネーム（本名がわかるもの）を入力してください:");
+        const pass = prompt("パスワードを作成してください:");
+        if (name && pass) {
+          const newMember = { id: 'usr-' + Date.now(), email, nickName: name, pass, role: '未設定(仮登録)', status: 'pending' };
+          membersDB.push(newMember);
+          saveMembersDB();
+          alert("登録を受け付けました！管理者が承認すると機能が利用可能になります。");
+          renderMemberList();
+        }
+      }
+
+      function openInviteModal() {
+        const inviteUrl = window.location.href;
+        navigator.clipboard.writeText(inviteUrl).then(() => {
+          alert("招待用URLをコピーしました！LINE等で部員に共有してください。");
+        }).catch(() => {
+          alert(`こちらのURLを共有してください:\n${inviteUrl}`);
+        });
+      }
+
+      function openProfileModal() {
+        const newNick = prompt("ニックネームを変更:", currentUser.nickName);
+        if (newNick && newNick.trim() !== "") {
+          currentUser.nickName = newNick.trim();
+          updateUserUI();
+          renderPosts();
+        }
+      }
+
+      const syncChannel = new BroadcastChannel('club_link_online_sync');
+      syncChannel.onmessage = () => syncFromStorage();
+
+      function notifyOnlineSync() {
+        saveMembersDB();
+        savePostsDB();
+        saveAbsenceDB();
+        syncChannel.postMessage({ timestamp: Date.now() });
+      }
+
+      function syncFromStorage() {
+        loadMembersDB();
+        loadPostsDB();
+        loadAbsenceDB();
+        renderPosts();
+        renderAbsenceList();
+        renderMemberList();
+      }
+
+      function loadMembersDB() {
+        const saved = localStorage.getItem('club_link_members_db');
+        if (saved) try { membersDB = JSON.parse(saved); } catch(e){}
+      }
+      function saveMembersDB() { localStorage.setItem('club_link_members_db', JSON.stringify(membersDB)); }
+
+      function loadPostsDB() {
+        const saved = localStorage.getItem('club_link_posts_db');
+        if (saved) try { postsDB = JSON.parse(saved); } catch(e){}
+      }
+      function savePostsDB() { localStorage.setItem('club_link_posts_db', JSON.stringify(postsDB)); }
+
+      function loadAbsenceDB() {
+        const saved = localStorage.getItem('club_link_absence_db');
+        if (saved) try { absenceDB = JSON.parse(saved); } catch(e){}
+      }
+      function saveAbsenceDB() { localStorage.setItem('club_link_absence_db', JSON.stringify(absenceDB)); }
+
+      let postsDB = [
+        {
+          id: 1,
+          author: "田中 陸",
+          role: "部長",
+          time: "本日 16:30",
+          text: "明日のトラック練習の集合時間が「8:30 陸上競技場」に変更になりました。各自スパイクを忘れないように。",
+          pinned: true,
+          reactions: { thumb: 8, eye: 5, pray: 3 },
+          replies: [{ author: "佐藤 葵", role: "一般部員", text: "了解しました！" }]
+        }
+      ];
+
+      function renderPosts() {
+        const container = document.getElementById('postsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+        postsDB.forEach(post => {
+          const card = document.createElement('div');
+          card.className = `bg-white border ${post.pinned ? 'border-amber-300 ring-1 ring-amber-100' : 'border-slate-200'} rounded-2xl p-4 shadow-sm space-y-3`;
+          let repliesHtml = post.replies.map(r => `
+            <div class="text-xs bg-slate-50 p-2 rounded-lg space-y-0.5">
+              <span class="font-bold text-slate-700">${escapeHtml(r.author)} <span class="text-[10px] text-slate-400">(${escapeHtml(r.role)})</span>:</span>
+              <span class="text-slate-600 block">${escapeHtml(r.text)}</span>
+            </div>
+          `).join('');
+
+          card.innerHTML = `
+            ${post.pinned ? '<div class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md w-max flex items-center gap-1"><i class="fa-solid fa-thumbtack"></i> ピン留め連絡</div>' : ''}
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="font-bold text-xs text-slate-800">${escapeHtml(post.author)}</span>
+                <span class="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded font-medium ml-1">${escapeHtml(post.role)}</span>
+              </div>
+              <span class="text-[10px] text-slate-400">${escapeHtml(post.time)}</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed">${escapeHtml(post.text)}</p>
+            <div class="flex gap-2 pt-1 border-t border-slate-100">
+              <button onclick="toggleReaction(${post.id}, 'thumb')" class="text-xs bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">👍 ${post.reactions.thumb}</button>
+              <button onclick="toggleReaction(${post.id}, 'eye')" class="text-xs bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">👀 ${post.reactions.eye}</button>
+              <button onclick="toggleReaction(${post.id}, 'pray')" class="text-xs bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">🙏 ${post.reactions.pray}</button>
+            </div>
+            <div class="space-y-2 pt-2 border-t border-slate-100">
+              <div class="space-y-1.5">${repliesHtml}</div>
+              <div class="flex gap-1.5 pt-1">
+                <input type="text" id="replyInput-${post.id}" placeholder="返信を入力..." class="flex-1 text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none">
+                <button onclick="addReply(${post.id})" class="text-xs bg-indigo-600 text-white font-bold px-3 py-1.5 rounded-lg">返信</button>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      }
+
+      function submitNewPost() {
+        const input = document.getElementById('newPostInput');
+        const text = input.value.trim();
+        const pinned = document.getElementById('pinCheck').checked;
+        if (!text) return alert('投稿内容を入力してください。');
+
+        postsDB.unshift({
+          id: Date.now(),
+          author: currentUser.nickName,
+          role: currentUser.role,
+          time: "たった今",
+          text, pinned,
+          reactions: { thumb: 0, eye: 0, pray: 0 },
+          replies: []
+        });
+        input.value = '';
+        document.getElementById('pinCheck').checked = false;
+        notifyOnlineSync();
+        sendWindowsNotification("陸上部 LINK 新規投稿", `${currentUser.nickName}: ${text}`);
+      }
+
+      function toggleReaction(postId, type) {
+        const post = postsDB.find(p => p.id === postId);
+        if (post) { post.reactions[type] += 1; notifyOnlineSync(); }
+      }
+
+      function addReply(postId) {
+        const input = document.getElementById(`replyInput-${postId}`);
+        const text = input.value.trim();
+        if (!text) return;
+        const post = postsDB.find(p => p.id === postId);
+        if (post) {
+          post.replies.push({ author: currentUser.nickName, role: currentUser.role, text });
+          notifyOnlineSync();
+        }
+      }
+
+      let absenceDB = [
+        { id: 101, name: "佐藤 葵", type: "遅刻", date: "2026-11-11", reason: "通院・病院", detail: "通院のため遅刻", status: "未確認" }
+      ];
+
+      function renderAbsenceList() {
+        const container = document.getElementById('adminAbsenceList');
+        const badge = document.getElementById('pendingBadge');
+        if (!container) return;
+        container.innerHTML = '';
+        let pendingCount = 0;
+
+        absenceDB.forEach(item => {
+          if (item.status === "未確認") pendingCount++;
+          const card = document.createElement('div');
+          card.className = "bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex justify-between items-center";
+          card.innerHTML = `
+            <div>
+              <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                ${escapeHtml(item.name)}
+                <span class="text-[10px] ${item.type === '欠席' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'} px-1.5 py-0.5 rounded font-bold">${escapeHtml(item.type)}</span>
+                <span class="text-[10px] ${item.status === '確認済み' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'} px-1.5 py-0.5 rounded font-bold">${escapeHtml(item.status)}</span>
+              </div>
+              <div class="text-[11px] text-slate-500 mt-1">${escapeHtml(item.date)} / ${escapeHtml(item.reason)} - ${escapeHtml(item.detail)}</div>
+            </div>
+            ${item.status === '未確認' ? `<button onclick="approveAbsence(${item.id})" class="text-xs bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg shrink-0">確認済みにする</button>` : ''}
+          `;
+          container.appendChild(card);
+        });
+
+        if (badge) {
+          badge.textContent = pendingCount;
+          if (pendingCount === 0) badge.classList.add('hidden');
+          else badge.classList.remove('hidden');
+        }
+      }
+
+      function submitAbsenceForm(e) {
+        e.preventDefault();
+        const type = document.getElementById('absType').value;
+        const name = document.getElementById('absName').value;
+        const date = document.getElementById('absDate').value;
+        const reason = document.getElementById('absReason').value;
+        const detail = document.getElementById('absDetail').value;
+
+        absenceDB.unshift({ id: Date.now(), name, type, date, reason, detail, status: "未確認" });
+        notifyOnlineSync();
+        alert('連絡を提出しました。');
+        switchTab('adminTab');
+        sendWindowsNotification("陸上部 LINK 連絡受信", `${name}さんから【${type}】連絡が提出されました。`);
+      }
+
+      function approveAbsence(id) {
+        const item = absenceDB.find(a => a.id === id);
+        if (item) { item.status = "確認済み"; notifyOnlineSync(); }
+      }
+
+      function renderMemberList() {
+        const container = document.getElementById('membersListContainer');
+        const pendingSection = document.getElementById('pendingMembersSection');
+        const pendingContainer = document.getElementById('pendingMembersList');
+        const pendingCountBadge = document.getElementById('pendingMemberCount');
+        if (!container) return;
+
+        container.innerHTML = '';
+        if (pendingContainer) pendingContainer.innerHTML = '';
+
+        if (currentUser.isPrimaryAdmin) {
+          const pendingMembers = membersDB.filter(m => m.status === 'pending');
+          if (pendingCountBadge) pendingCountBadge.textContent = `${pendingMembers.length}件`;
+
+          if (pendingMembers.length > 0 && pendingSection && pendingContainer) {
+            pendingSection.classList.remove('hidden');
+            pendingMembers.forEach(m => {
+              const card = document.createElement('div');
+              card.className = "bg-white border border-amber-300 rounded-lg p-2.5 space-y-2 shadow-sm";
+              card.innerHTML = `
+                <div class="flex justify-between items-center">
+                  <div>
+                    <span class="font-bold text-xs text-slate-800">${escapeHtml(m.nickName)}</span>
+                    <span class="text-[10px] text-slate-400 block">${escapeHtml(m.email)}</span>
+                  </div>
+                  <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">未承認ゲスト</span>
+                </div>
+                <div class="flex gap-2 items-center pt-1 border-t border-slate-100">
+                  <select id="assignRole-${m.id}" class="text-xs bg-slate-50 border border-slate-200 rounded p-1 flex-1 font-medium">
+                    <option value="一般部員">一般部員</option>
+                    <option value="副部長">副部長</option>
+                    <option value="部長">部長</option>
+                  </select>
+                  <button onclick="approveMemberRole('${m.id}')" class="text-xs bg-emerald-600 text-white font-bold px-3 py-1 rounded shrink-0">
+                    承認・役職確定
+                  </button>
+                </div>
+              `;
+              pendingContainer.appendChild(card);
+            });
+          } else if (pendingSection) pendingSection.classList.add('hidden');
+
+          const approvedMembers = membersDB.filter(m => m.status === 'approved');
+          approvedMembers.forEach(m => {
+            const card = document.createElement('div');
+            card.className = "bg-white border border-slate-200 rounded-xl p-3 shadow-sm space-y-2";
+            card.innerHTML = `
+              <div class="flex justify-between items-center">
+                <div>
+                  <div class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                    ${escapeHtml(m.nickName)}
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">${m.role}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400">${escapeHtml(m.email)}</div>
+                </div>
+                <div class="text-right">
+                  <span class="text-[10px] text-slate-400 block">パスワード</span>
+                  <span class="font-mono text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">${escapeHtml(m.pass)}</span>
+                </div>
+              </div>
+            `;
+            container.appendChild(card);
+          });
+        }
+      }
+
+      function approveMemberRole(memberId) {
+        const select = document.getElementById(`assignRole-${memberId}`);
+        const selectedRole = select ? select.value : '一般部員';
+        const member = membersDB.find(m => m.id === memberId);
+        if (member) {
+          member.role = selectedRole;
+          member.status = 'approved';
+          notifyOnlineSync();
+          alert(`【${member.nickName}】さんの役職を「${selectedRole}」として承認しました！`);
+        }
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        loadMembersDB();
+        loadPostsDB();
+        loadAbsenceDB();
+        detectEnvironment();
+        renderPosts();
+        renderAbsenceList();
+        renderMemberList();
+        updateUserUI();
+        window.addEventListener('storage', () => syncFromStorage());
+      });
+    </script>
+  </body>
+</html>
